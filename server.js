@@ -11,7 +11,7 @@ const app = express();
 
 connectDb();
 
-app.use(configureCors());
+// app.use(configureCors());
 app.use(express.json());
 
 app.get('/' , (req ,res) => {
