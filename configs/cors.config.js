@@ -7,7 +7,7 @@ const configureCors = () => {
         origin: (origin , callback) => {
             const allowedOrigins = [
                 'http://localhost:3000', //local dev
-                'https://yourcustomdomain.com' //procuction domain
+                'https://sih-2025-backend-sandy.vercel.app/' //procuction domain
             ]
 
             if(!origin || allowedOrigins.indexOf(origin) !== -1){
