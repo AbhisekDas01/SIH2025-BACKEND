@@ -5,7 +5,7 @@ import { creteHealthReport, getVillageDataForLast7Days } from '../controllers/he
 const healthRouter = express.Router();
 
 healthRouter.post('/create-report' , authenticateUser , creteHealthReport);
-healthRouter.get('get-data' , getVillageDataForLast7Days);
+healthRouter.get('/get-data' , getVillageDataForLast7Days);
 
 
 export default healthRouter;

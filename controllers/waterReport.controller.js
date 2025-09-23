@@ -1,5 +1,7 @@
+
 import WaterReport from '../models/waterReport.model.js';
 import APIError from '../utils/customError.util.js';
+
 
 
 export const createOrUpdateWaterReport = async (req, res) => {
@@ -10,8 +12,8 @@ export const createOrUpdateWaterReport = async (req, res) => {
         throw new APIError("Unauthorized: User ID not found. Please log in.", 401);
     }
 
-    
-    
+
+
 
     const {
         village_id,
@@ -26,7 +28,7 @@ export const createOrUpdateWaterReport = async (req, res) => {
         throw new APIError("village_id, location, water_turbidity_ntu, and water_ph are required.", 400);
     }
 
-      // 1. Validate required fields
+    // 1. Validate required fields
     if (!village_id || !location || typeof water_turbidity_ntu === 'undefined' || typeof water_ph === 'undefined') {
         throw new APIError("village_id, location, water_turbidity_ntu, and water_ph are required.", 400);
     }
@@ -73,4 +75,25 @@ export const createOrUpdateWaterReport = async (req, res) => {
         data: result
     });
 };
+
+export const getVillageWaterReport = async (req, res) => {
+
+    const village_id = req.params.village_id;
+
+    const waterReport = await WaterReport.find({ village_id });
+
+
+    if (waterReport.length === 0) {
+        throw new APIError("Village record does not exists!", 404);
+    }
+
+
+    res.json({
+        success: true,
+        message: "Village water report found",
+        data: waterReport
+    })
+}
+
+
 

@@ -6,5 +6,6 @@ export const {
     PORT,
     MONGODB_URI,
     JWT_SECRET,
-    JWT_EXPIRES_IN
+    JWT_EXPIRES_IN,
+    ML_SERVER_URL
 } = process.env;

@@ -1,5 +1,8 @@
 import HealthReport from "../models/HealthReport.model.js";
 import APIError from "../utils/customError.util.js";
+import { get7DaysHealth, getWaterReport } from '../utils/mlServer.util.js';
+import { ML_SERVER_URL } from '../configs/env.config.js';
+import axios from 'axios';
 
 
 export const creteHealthReport = async (req, res) => {
@@ -7,7 +10,7 @@ export const creteHealthReport = async (req, res) => {
     const reporter_id = req.user.userId;
 
     const {
-        village_id,
+        village_id,                                                            
         location,
         rainfall_mm = 0, // Default value to prevent errors
         reported_cases = 0,
@@ -44,7 +47,7 @@ export const creteHealthReport = async (req, res) => {
             symptom_diarrhea_cases: Number(symptom_diarrhea_cases),
             symptom_vomiting_cases: Number(symptom_vomiting_cases),
             symptom_fever_cases: Number(symptom_fever_cases),
-            verified_at: today 
+            verified_at: today
         })
 
         await newReport.save();
@@ -58,7 +61,7 @@ export const creteHealthReport = async (req, res) => {
     } else {
         // This block runs if a report for the village already exists today.
         if (report.reporters.includes(reporter_id)) {
-        
+
             throw new APIError("You have already submitted today's data!", 409);
         }
 
@@ -79,7 +82,6 @@ export const creteHealthReport = async (req, res) => {
         });
     }
 }
-
 
 export const getVillageDataForLast7Days = async (req, res) => {
     // 1. Define the date range for the last 7 days
@@ -146,3 +148,85 @@ export const getVillageDataForLast7Days = async (req, res) => {
         data: villageData
     });
 };
+
+
+//predict the data 
+const dailyPrediction = async () => {
+
+    try {
+
+        const healthData = await get7DaysHealth();
+
+        if (!healthData || healthData.length === 0) {
+            console.log("No health data found to run predictions.");
+            return;
+        }
+
+        // BUG FIX 1: Use a for...of loop to correctly handle async/await.
+        for (const data of healthData) {
+
+            let cases = 0;
+            let symptom_diarrhea = 0;
+            let symptom_vomiting = 0;
+            let symptom_fever = 0;
+            let latitude = 0;
+            let longitude = 0;
+
+            const villageId = data.village_id;
+
+            data.daily_reports.forEach(({ reported_cases, symptom_diarrhea_cases, symptom_vomiting_cases, symptom_fever_cases, location }) => {
+                cases += reported_cases;
+                symptom_diarrhea += symptom_diarrhea_cases;
+                symptom_vomiting += symptom_vomiting_cases;
+                symptom_fever += symptom_fever_cases;
+                latitude = location.latitude;
+                longitude = location.longitude;
+            });
+
+            const waterDataArray = await getWaterReport(villageId);
+            // Get the most recent water report, or an empty object if none exists.
+            const latestWaterReport = waterDataArray && waterDataArray.length > 0 ? waterDataArray[waterDataArray.length - 1] : {};
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayString = today.toISOString().split('T')[0];
+
+            const payload = {
+                "date": todayString,
+                "village_id": villageId,
+                "latitude": latitude,
+                "longitude": longitude,
+                "rainfall_mm": latestWaterReport.rainfall_mm || 0,
+                "water_turbidity_ntu": latestWaterReport.water_turbidity_ntu || 0,
+                "water_ph": latestWaterReport.water_ph || 7, // Default to neutral pH
+                "reported_cases": cases,
+                "symptom_diarrhea_cases": symptom_diarrhea,
+                "symptom_vomiting_cases": symptom_vomiting,
+                "symptom_fever_cases": symptom_fever
+            };
+
+            const predictionResult = await axios.post(
+                `${ML_SERVER_URL}/predict`,
+                payload,
+                {
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+
+            console.log(`Prediction for ${villageId}:`, predictionResult.data);
+        }
+
+    } catch (error) {
+        // Improved error logging
+        if (error.response) {
+            console.error("Error from ML Server:", error.response.status, error.response.data);
+        } else {
+            console.error("Error in dailyPrediction function:", error.message);
+        }
+    }
+}
+
+
+dailyPrediction()
+
+

@@ -29,6 +29,11 @@ const healthReportSchema = new mongoose.Schema({
             max: [180, "Longitude must be between -180 and 180"]
         }
     },
+    rainfall_mm: {
+        type: Number,
+        default: 0,
+        min: [0, "Rainfall cannot be negative"]
+    },
     reported_cases: {
         type: Number,
         required: [true, "Total reported cases is required!"],
@@ -57,7 +62,11 @@ const healthReportSchema = new mongoose.Schema({
     },
     verified_at: {
         type: Date,
-        default: new Date().toISOString().split("T")[0]
+        default: () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // This removes the time part.
+            return today;
+        }
     },
 });
 
