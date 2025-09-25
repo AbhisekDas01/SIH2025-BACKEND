@@ -35,7 +35,7 @@ export const  registerUser = async (req , res)  => {
     }
 
     //check if the email adhaar already exists
-    const existingUser = await User.findOne({EmailId , AadhaarNumber});
+    const existingUser = await User.findOne({$or: [{EmailId} , {AadhaarNumber}]});
 
     if(existingUser){
 
