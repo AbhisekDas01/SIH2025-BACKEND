@@ -100,10 +100,7 @@ export const loginUser = async (req, res) => {
     return res.status(200).json({
         success: true,
         message: 'Login successful',
-        data: {
-            token,
-            tokenExpiry: JWT_EXPIRES_IN
-        }
+        token: token
     });
 };
 
